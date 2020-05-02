@@ -2,12 +2,19 @@ package main
 
 import (
 	"fmt"
+	// "log"
+	// "os"
 	"sync"
 	"time"
 
 	"github.com/gdamore/tcell"
 	"github.com/gdamore/tcell/encoding"
 	"github.com/pkg/errors"
+)
+
+const (
+	frameMs = 500
+	glyph   = '▄'
 )
 
 func main() {
@@ -43,7 +50,6 @@ func initAndDraw() error {
 	screen.Show()
 
 	wg.Wait()
-	screen.Clear()
 	return nil
 }
 
@@ -86,23 +92,30 @@ func redrawLoop(screen tcell.Screen, end <-chan bool, wg *sync.WaitGroup, fig *f
 
 		default:
 			drawScreen(screen, fig)
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(frameMs)
 		}
 	}
 }
 
 func drawScreen(screen tcell.Screen, fig *figureState) {
 	w, h := screen.Size()
-	min := w
+	h = 2 * h // a cell's height is twice longer than a cell's width
+	min := w - 1
 	if h < min {
-		min = h
+		min = h - 1
+	}
+	radius := float64(min) / 2.0
+
+	centerX, centerY := w/2, h/2
+	msNow := float64(time.Now().UnixNano() / 1e6)
+	x, y := fig.getCoords(msNow / frameMs)
+	realX, realY := centerX+int(radius*x), centerY+int(radius*y)
+
+	style := tcell.StyleDefault
+	if realY%2 == 0 { // set high half of the cell
+		style = style.Reverse(true)
 	}
 
-	const gl = '▄'
-	centerX, centerY := w/2, h/2
-	x, y := fig.getCoords(float64(time.Now().UnixNano() / 1e6))
-	realX, realY := centerX+int(float64(min)*x), centerY+int(float64(min)*y)
-
-	screen.SetContent(realX, realY, gl, nil, tcell.StyleDefault)
+	screen.SetContent(realX, realY/2, glyph, nil, style)
 	screen.Show()
 }
