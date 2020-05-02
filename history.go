@@ -1,13 +1,22 @@
 package main
 
+import (
+	"reflect"
+)
+
 type history struct {
-	points [][]point
-	length int
+	points [][]intPoint
+	maxLen int
 }
 
-func (h *history) add(points []point) {
-	if len(h.points) == h.length {
+func (h *history) add(points []intPoint) {
+	if len(h.points) > 0 && reflect.DeepEqual(h.points[len(h.points)-1], points) {
+		return
+	}
+
+	if len(h.points) == h.maxLen {
 		h.points = h.points[1:]
 	}
+
 	h.points = append(h.points, points)
 }

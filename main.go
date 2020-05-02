@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"log"
 	"sync"
 	"time"
 
@@ -15,7 +13,7 @@ import (
 const (
 	frameMs   = 500
 	glyph     = '▄'
-	nOldRunes = 5
+	nOldRunes = 20
 )
 
 func main() {
@@ -85,7 +83,7 @@ func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *fi
 }
 
 func redrawLoop(screen tcell.Screen, end <-chan bool, wg *sync.WaitGroup, fig *figureState) {
-	hist := history{points: nil, length: nOldRunes}
+	hist := history{points: nil, maxLen: nOldRunes}
 
 	for {
 		select {
@@ -110,25 +108,23 @@ func drawScreen(screen tcell.Screen, fig *figureState, hist *history) {
 	}
 
 	msNow := float64(time.Now().UnixNano() / 1e6)
-	t := msNow // frameMs
+	t := msNow / frameMs
 	points := fig.getCoords(t)
-	midX, midY, radius := w/2, h/2, float64(min)/2.0
+	center, radius := intPoint{w / 2, h / 2}, float64(min)/2.0
 
 	screen.Clear()
-	hist.add(points)
-	if rand.Intn(5) == 0 {
-		log.Fatalf("%v", hist)
-	} else {
-		log.Printf("%v", hist)
+	screenPoints := []intPoint{}
+	for _, p := range points {
+		screenPoints = append(screenPoints, p.toScreen(center, radius))
 	}
+	hist.add(screenPoints)
 	for _, points := range hist.points {
 		for _, p := range points {
-			x, y := p.toScreen(midX, midY, radius)
 			style := tcell.StyleDefault
-			if y%2 == 0 { // set high half of the cell
+			if p.y%2 == 0 { // set high half of the cell
 				style = style.Reverse(true)
 			}
-			screen.SetContent(x, y/2, glyph, nil, style)
+			screen.SetContent(p.x, p.y/2, glyph, nil, style)
 		}
 	}
 	screen.Show()
