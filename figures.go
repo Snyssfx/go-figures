@@ -5,13 +5,21 @@ import (
 	"sync"
 )
 
-// return x, y from -1 to 1
-type figure func(time float64) (float64, float64)
+type point struct {
+	x, y float64
+}
 
-func circle(time float64) (float64, float64) {
+func (p point) toScreen(centerX, centerY int, radius float64) (int, int) {
+	return centerX + int(radius*p.x), centerY + int(radius*p.y)
+}
+
+// return x, y from -1 to 1
+type figure func(time float64) []point
+
+func circle(time float64) []point {
 	x := math.Cos(time)
 	y := math.Sin(time)
-	return x, y
+	return []point{{x, y}}
 }
 
 type figureState struct {
@@ -25,9 +33,9 @@ func (st *figureState) change(newFigure figure) {
 	st.changeMut.Unlock()
 }
 
-func (st *figureState) getCoords(time float64) (float64, float64) {
+func (st *figureState) getCoords(time float64) []point {
 	st.changeMut.Lock()
-	x, y := st.coordsFunc(time)
+	points := st.coordsFunc(time)
 	st.changeMut.Unlock()
-	return x, y
+	return points
 }
