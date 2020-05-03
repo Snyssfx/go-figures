@@ -14,6 +14,7 @@ const (
 	frameMs     = 500
 	glyph       = '▄'
 	startNRunes = 45
+	startCoef   = 1.0
 )
 
 func main() {
@@ -43,7 +44,7 @@ func initAndDraw() error {
 	wg.Add(2)
 	end := make(chan bool)
 
-	fig := newFigure(0)
+	fig := newFigure(0, startCoef)
 	hist := &history{maxLen: startNRunes}
 
 	go pollEvent(screen, end, &wg, fig, hist)
@@ -84,6 +85,12 @@ func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *fi
 				}
 				if rune == '-' {
 					hist.decMaxLen()
+				}
+				if rune == '>' {
+					fig.incCoef()
+				}
+				if rune == '<' {
+					fig.decCoef()
 				}
 			}
 		}
