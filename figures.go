@@ -2,20 +2,7 @@ package main
 
 import (
 	"math"
-	"sync"
 )
-
-type floatPoint struct {
-	x, y float64
-}
-
-type intPoint struct {
-	x, y int
-}
-
-func (p floatPoint) toScreen(center intPoint, radius float64) intPoint {
-	return intPoint{center.x + int(radius*p.x), center.y + int(radius*p.y)}
-}
 
 // return x, y from -1 to 1
 type figure func(time float64) []floatPoint
@@ -56,33 +43,13 @@ func itsAllCos(time float64) []floatPoint {
 	}
 }
 
-type figureState struct {
-	nowFunc   figure
-	changeMut sync.Mutex
-	allFuncs  []figure
-}
+func hypocycloid(time float64) []floatPoint {
+	k := 5.5
+	r := 1.0 / k
+	x := r*(k - 1) * math.Cos(time) + r * math.Cos((k - 1) * time)
+	y := r*(k - 1) * math.Sin(time) + r * math.Sin((k - 1) * time)
 
-func newFigure(nowIdx int) *figureState {
-	allFuncs := []figure{
-		circle,
-		itsAllCos,
-		sinWithX,
+	return []floatPoint {
+		{x, y},
 	}
-	return &figureState{
-		allFuncs: allFuncs,
-		nowFunc:  allFuncs[nowIdx],
-	}
-}
-
-func (st *figureState) change(newIdx int) {
-	st.changeMut.Lock()
-	st.nowFunc = st.allFuncs[newIdx]
-	st.changeMut.Unlock()
-}
-
-func (st *figureState) getCoords(time float64) []floatPoint {
-	st.changeMut.Lock()
-	points := st.nowFunc(time)
-	st.changeMut.Unlock()
-	return points
 }
