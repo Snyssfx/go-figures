@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	frameMs   = 500
-	glyph     = '▄'
-	nOldRunes = 45
+	frameMs     = 500
+	glyph       = '▄'
+	startNRunes = 45
 )
 
 func main() {
@@ -42,10 +42,12 @@ func initAndDraw() error {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	end := make(chan bool)
-	fig := newFigure(0)
 
-	go pollEvent(screen, end, &wg, fig)
-	go redrawLoop(screen, end, &wg, fig)
+	fig := newFigure(0)
+	hist := &history{maxLen: startNRunes}
+
+	go pollEvent(screen, end, &wg, fig, hist)
+	go redrawLoop(screen, end, &wg, fig, hist)
 
 	screen.Show()
 
@@ -53,7 +55,7 @@ func initAndDraw() error {
 	return nil
 }
 
-func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *figureState) {
+func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *figureState, hist *history) {
 	for {
 		event := screen.PollEvent()
 		switch event := event.(type) {
@@ -77,14 +79,18 @@ func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *fi
 					idx := int(rune - '1')
 					fig.change(idx)
 				}
+				if rune == '+' {
+					hist.incMaxLen()
+				}
+				if rune == '-' {
+					hist.decMaxLen()
+				}
 			}
 		}
 	}
 }
 
-func redrawLoop(screen tcell.Screen, end <-chan bool, wg *sync.WaitGroup, fig *figureState) {
-	hist := history{points: nil, maxLen: nOldRunes}
-
+func redrawLoop(screen tcell.Screen, end <-chan bool, wg *sync.WaitGroup, fig *figureState, hist *history) {
 	for {
 		select {
 
@@ -93,7 +99,7 @@ func redrawLoop(screen tcell.Screen, end <-chan bool, wg *sync.WaitGroup, fig *f
 			return
 
 		default:
-			drawScreen(screen, fig, &hist)
+			drawScreen(screen, fig, hist)
 			time.Sleep(frameMs)
 		}
 	}

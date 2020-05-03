@@ -14,9 +14,21 @@ func (h *history) add(points []intPoint) {
 		return
 	}
 
-	if len(h.points) == h.maxLen {
-		h.points = h.points[1:]
+	if len(h.points) >= h.maxLen {
+		diff := len(h.points) - h.maxLen + 1
+		h.points = h.points[diff:]
 	}
 
 	h.points = append(h.points, points)
+}
+
+func (h *history) incMaxLen() {
+	h.maxLen++
+}
+
+func (h *history) decMaxLen() {
+	h.maxLen--
+	if h.maxLen <= 0 {
+		h.maxLen = 1
+	}
 }
