@@ -26,20 +26,63 @@ func circle(time float64) []floatPoint {
 	return []floatPoint{{x, y}}
 }
 
-type figureState struct {
-	coordsFunc figure
-	changeMut  sync.Mutex
+func sinWithX(time float64) []floatPoint {
+	y := math.Sin(1.5 * time)
+
+	twoPiInX := math.Floor(time / (2 * math.Pi))
+	x := (time-twoPiInX*2*math.Pi)/(1*math.Pi) - 1
+
+	return []floatPoint{
+		{x, y},
+		{x, 0},
+	}
 }
 
-func (st *figureState) change(newFigure figure) {
+func itsAllCos(time float64) []floatPoint {
+	cos := math.Cos(1.0 * time)
+
+	twoPiInX := math.Floor(time / (2 * math.Pi))
+	x := (time-twoPiInX*2*math.Pi)/(1*math.Pi) - 1
+
+	return []floatPoint{
+		{x, cos},
+		{x, -cos},
+		{-x, cos},
+		{-x, -cos},
+		{cos, x},
+		{-cos, x},
+		{cos, -x},
+		{-cos, -x},
+	}
+}
+
+type figureState struct {
+	nowFunc   figure
+	changeMut sync.Mutex
+	allFuncs  []figure
+}
+
+func newFigure(nowIdx int) *figureState {
+	allFuncs := []figure{
+		circle,
+		itsAllCos,
+		sinWithX,
+	}
+	return &figureState{
+		allFuncs: allFuncs,
+		nowFunc:  allFuncs[nowIdx],
+	}
+}
+
+func (st *figureState) change(newIdx int) {
 	st.changeMut.Lock()
-	st.coordsFunc = newFigure
+	st.nowFunc = st.allFuncs[newIdx]
 	st.changeMut.Unlock()
 }
 
 func (st *figureState) getCoords(time float64) []floatPoint {
 	st.changeMut.Lock()
-	points := st.coordsFunc(time)
+	points := st.nowFunc(time)
 	st.changeMut.Unlock()
 	return points
 }

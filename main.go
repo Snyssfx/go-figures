@@ -13,7 +13,7 @@ import (
 const (
 	frameMs   = 500
 	glyph     = '▄'
-	nOldRunes = 20
+	nOldRunes = 45
 )
 
 func main() {
@@ -34,6 +34,7 @@ func initAndDraw() error {
 	if err := screen.Init(); err != nil {
 		return errors.Wrap(err, "screen.Init()")
 	}
+	defer screen.Fini()
 
 	screen.SetStyle(tcell.StyleDefault)
 	screen.Clear()
@@ -41,15 +42,14 @@ func initAndDraw() error {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	end := make(chan bool)
-	fig := figureState{coordsFunc: circle}
+	fig := newFigure(0)
 
-	go pollEvent(screen, end, &wg, &fig)
-	go redrawLoop(screen, end, &wg, &fig)
+	go pollEvent(screen, end, &wg, fig)
+	go redrawLoop(screen, end, &wg, fig)
 
 	screen.Show()
 
 	wg.Wait()
-	screen.Fini()
 	return nil
 }
 
@@ -74,8 +74,8 @@ func pollEvent(screen tcell.Screen, end chan<- bool, wg *sync.WaitGroup, fig *fi
 					return
 				}
 				if '1' <= rune && rune <= '9' {
-					// rune - '1'
-
+					idx := int(rune - '1')
+					fig.change(idx)
 				}
 			}
 		}
@@ -112,12 +112,14 @@ func drawScreen(screen tcell.Screen, fig *figureState, hist *history) {
 	points := fig.getCoords(t)
 	center, radius := intPoint{w / 2, h / 2}, float64(min)/2.0
 
-	screen.Clear()
 	screenPoints := []intPoint{}
 	for _, p := range points {
-		screenPoints = append(screenPoints, p.toScreen(center, radius))
+		intP := p.toScreen(center, radius)
+		screenPoints = append(screenPoints, intP)
 	}
 	hist.add(screenPoints)
+
+	screen.Clear()
 	for _, points := range hist.points {
 		for _, p := range points {
 			style := tcell.StyleDefault
