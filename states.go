@@ -27,9 +27,11 @@ func newFigure(nowIdx int, startCoef float64) *figureState {
 }
 
 func (st *figureState) change(newIdx int) {
-	st.changeMut.Lock()
-	st.nowFunc = st.allFuncs[newIdx]
-	st.changeMut.Unlock()
+	if 0 <= newIdx && newIdx < len(st.allFuncs) {
+		st.changeMut.Lock()
+		st.nowFunc = st.allFuncs[newIdx]
+		st.changeMut.Unlock()
+	}
 }
 
 func (st *figureState) getCoords(time float64) []floatPoint {
