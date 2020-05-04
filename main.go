@@ -142,5 +142,14 @@ func drawScreen(screen tcell.Screen, fig *figureState, hist *history) {
 			screen.SetContent(p.x, p.y/2, glyph, nil, style)
 		}
 	}
+	drawStr(screen, fmt.Sprintf("hist=%d", hist.maxLen), 0, 0)
+	drawStr(screen, fmt.Sprintf("coef=%.1f", fig.coef), 0, 1)
+
 	screen.Show()
+}
+
+func drawStr(screen tcell.Screen, str string, x, y int) {
+	for i, char := range str {
+		screen.SetContent(x+i, y, char, nil, tcell.StyleDefault)
+	}
 }
